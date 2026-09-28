@@ -1,0 +1,40 @@
+{
+  "model": "facebook/jepa-wms:jepa_wm_pusht predictor",
+  "upstream_commit": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
+  "checkpoint_sha256": "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb",
+  "input_kind": "synthetic_encoded_latents_and_actions",
+  "device": "cpu",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "torch_version": "2.7.0",
+  "cpu_threads": 1,
+  "batch": 1,
+  "frames": 4,
+  "latent_shape": [
+    1,
+    4,
+    1,
+    16,
+    16,
+    384
+  ],
+  "output_shape": [
+    1,
+    4,
+    256,
+    384
+  ],
+  "predictor_parameters": 17626480,
+  "predictor_weight_bytes_fp32": 70505920,
+  "workload_estimate": {
+    "tokens_per_sample": 1024,
+    "matrix_macs": 11796480000,
+    "attention_macs": 5033164800,
+    "total_major_macs": 16829644800
+  },
+  "warmup": 3,
+  "repeats": 20,
+  "p50_predictor_ms": 295.40024950983934,
+  "p95_predictor_ms": 301.51474999729544,
+  "output_l2": 1209.571044921875,
+  "action_effect_l2": 483.3428955078125
+}

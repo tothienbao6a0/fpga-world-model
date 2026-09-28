@@ -1,13 +1,8 @@
-# Research index
+# Project index
 
-- I want to build or verify the hardware prototype: [rollout engine interface and limits](hardware/rollout-engine.md).
-- I want to review the hardware implementation: [hardware handoff](agents/rtl-rollout-engine.md).
-- I want to run the first decision-trace baseline: [repo overview and commands](../README.md).
-- I want to see what the first benchmark found: [toy precision experiment](experiments/001-toy-precision.md).
-- I want to see what changed under model error: [nonlinear model-mismatch experiment](experiments/002-model-mismatch.md).
-- I want to compare sparse and exhaustive hardware search: [candidate-breadth experiment](experiments/003-candidate-breadth.md).
-- I want to review the initial implementation and its limits: [agent handoff](agents/initial-benchmark.md).
-- I want to understand the proposed project and what prior work already covers: [direction and evidence review](research/2026-09-direction-review.md).
-- I want to compare less explored directions beyond Bonsai: [world-model opportunity map](research/2026-09-opportunity-map.md).
-- I want to decide what to build first or when to stop: [experiments and decision gates](research/2026-09-direction-review.md#experiments-and-decision-gates).
-- I want to check a claim against its source: [primary sources](research/2026-09-direction-review.md#primary-sources).
+- I want to understand the project and the real model workload: [world-model inference study](research/world-model-workload.md).
+- I want to reproduce checkpoint-backed measurements: [setup and commands](../README.md#reproduce).
+- I want to inspect the first measured runs: [two-frame CPU result](../results/jepa_wm_pusht_cpu_macos_arm64.json) and [four-frame CPU result](../results/jepa_wm_pusht_cpu_4frames_macos_arm64.json).
+- I want to inspect the first real-model hardware block: [INT8 QKV tile and its limits](research/world-model-workload.md#first-hardware-block).
+- I want to review what changed in the pivot: [agent handoff](agents/checkpoint-workload.md).
+- I want the previous planning prototype: [archived prototype](../archive/planning-prototype/README.md).

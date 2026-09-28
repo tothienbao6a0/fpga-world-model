@@ -1,25 +1,34 @@
-# FPGA world-model planning prototype
+# World-model inference on reconfigurable hardware
 
-This repo now contains a **synthesizable planning engine**, its bit-exact software reference, and a small closed-loop benchmark. It tests a concrete hardware question: can a fixed-point circuit evaluate candidate futures for a learned dynamics model and choose an action within a predictable cycle budget?
+This repository studies **the inference workload of a trained visual world model** and how to map its predictor to FPGA hardware. The first target is Meta's released JEPA-WM Push-T checkpoint. Given encoded visual tokens, actions, and proprioception, its six-block action-conditioned transformer predicts future visual latents. The work now starts with the real predictor and measured operator shapes; the earlier two-state planning toy is preserved under `archive/planning-prototype/` for provenance and is not the project baseline.
 
-The first engine is intentionally narrow. It rolls out a learned two-state linear model using Q8.8 arithmetic, scores nine streamed four-step plans, and returns the first action of the lowest-cost plan. The toy simulator and model fitting live in `worldbench/`; the hardware, reference, and verification live in `fpga/`.
+## What works now
 
-## Run it
+- `worldmodel/bench.py` loads the official predictor and proprioception weights from a SHA-verified checkpoint into the official upstream implementation. It measures predictor latency with synthetic encoded visual tokens and actions, checks that actions affect the output, and reports tensor dimensions, parameter bytes, and major matrix/attention operation counts.
+- `worldmodel/spec.py` pins the upstream commit and checkpoint revision and rejects a mismatched architecture.
+- `rtl/qkv_tile.sv` is a synthesizable 16-lane INT8 matrix-vector tile for the real predictor's 1,200×400 QKV projection. The simulator checks a 16×400 slice quantized from the checkpoint against an integer software reference; the generic synthesis check runs in `make check`.
+- `results/` contains the first one-thread macOS CPU measurements for two and four input frames. These are real **checkpoint-backed predictor** runs. The inputs are synthetic latents, so the numbers are not end-to-end video inference or prediction-quality results.
 
-Install Python 3, [Icarus Verilog](https://steveicarus.github.io/iverilog/), and [Yosys](https://yosyshq.net/yosys/). On macOS, `brew install icarus-verilog yosys` provides the two hardware tools. Then run:
+## Reproduce
+
+Python 3.10, [uv](https://docs.astral.sh/uv/), Icarus Verilog, and Yosys are required for the complete checks. On macOS, install the hardware tools with `brew install icarus-verilog yosys`. The isolated model environment uses the pinned versions in `requirements-model.txt`. From the repo root:
 
 ```sh
 make check
-python3 -m fpga.bench
-python3 -m fpga.bench --candidate-bank exhaustive
-python3 -m fpga.sweep
-make synth-report
+uv python install 3.10
+uv venv --python 3.10 .venv
+uv pip install --python .venv/bin/python -r requirements-model.txt
+mkdir -p .model-cache
+git clone https://github.com/facebookresearch/jepa-wms.git .model-cache/jepa-wms
+git -C .model-cache/jepa-wms checkout 13cf1d9c7e476f53c17714d2e0f1dc239a883ce0
+.venv/bin/python -m worldmodel.fetch
+.venv/bin/python -m worldmodel.bench --device cpu --frames 2
+.venv/bin/python -m worldmodel.bench --device cpu --frames 4
+make model-check
 ```
 
-`make check` runs unit tests, compiles and simulates the RTL against 23 bit-exact cases, including an 81-plan stream, and checks that Yosys can synthesize the top module. `fpga.bench` compares the fixed-point hardware arithmetic contract with floating-point planning in the same toy control task. `fpga.sweep` repeats both candidate banks and environments across five seeds. `make synth-report` reports generic logic cells, **not** resources or timing for a chosen FPGA.
+The checkpoint is about 212 MB and remains in the ignored local cache. The source checkout also stays ignored. The benchmark validates both pins, the source tree's clean state, and the checkpoint hash before loading weights. `make model-check` additionally compares a quantized QKV slice from that checkpoint with the RTL tile. The [official model weights](https://huggingface.co/facebook/jepa-wms) and [upstream code](https://github.com/facebookresearch/jepa-wms) use CC BY-NC 4.0; this repo redistributes neither.
 
-## Current result
+## Next hardware milestone
 
-With the default nine-plan bank, each decision streams 36 actions after a start cycle, so the ideal uninterrupted engine schedule is 37 cycles. The exhaustive 81-plan bank takes 325 cycles. Across five toy-workload seeds, exhaustive search reduced local fixed-point action disagreements with the floating-point planner but increased mean final task cost in both environments. See the [candidate-breadth experiment](docs/experiments/003-candidate-breadth.md) for exact results. There is no board implementation, measured clock rate, end-to-end latency, power result, or comparison with a GPU yet.
-
-Start with the [hardware interface and limits](docs/hardware/rollout-engine.md), the [research index](docs/README.md), and the [September 2026 evidence review](docs/research/2026-09-direction-review.md).
+The current predictor has 17.6 million parameters and takes 512 visual tokens for two frames or 1,024 for four frames. The measured four-frame predictor takes about 295 ms median on one Mac CPU thread; that is a comparison point, not an FPGA speedup claim. The next step is to profile its attention, MLP, and weight traffic on a suitable GPU and map one operator block through the AWS F2 toolchain, including host transfer and timing closure. See the [workload analysis](docs/research/world-model-workload.md) and [research index](docs/README.md).
