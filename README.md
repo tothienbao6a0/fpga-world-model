@@ -7,6 +7,7 @@ This repository studies **the inference workload of a trained visual world model
 - `worldmodel/bench.py` loads the official predictor and proprioception weights from a SHA-verified checkpoint into the official upstream implementation. It measures predictor latency with synthetic encoded visual tokens and actions, checks that actions affect the output, and reports tensor dimensions, parameter bytes, and major matrix/attention operation counts.
 - `worldmodel/spec.py` pins the upstream commit and checkpoint revision and rejects a mismatched architecture.
 - `rtl/qkv_tile.sv` is a synthesizable 16-lane INT8 matrix-vector tile for the real predictor's 1,200×400 QKV projection. The simulator checks a 16×400 slice quantized from the checkpoint against an integer software reference; the generic synthesis check runs in `make check`.
+- `worldmodel/candidate_bench.py` measures multiple action candidates sharing one visual context. `rtl/qkv_candidate_tile.sv` broadcasts each QKV weight to four candidates in parallel; simulation checks a quantized 16×400 checkpoint slice. This tests a weight-traffic idea, not full-model FPGA acceleration.
 - `results/` contains the first one-thread macOS CPU measurements for two and four input frames. These are real **checkpoint-backed predictor** runs. The inputs are synthetic latents, so the numbers are not end-to-end video inference or prediction-quality results.
 
 ## Reproduce
@@ -25,10 +26,11 @@ git -C .model-cache/jepa-wms checkout 13cf1d9c7e476f53c17714d2e0f1dc239a883ce0
 .venv/bin/python -m worldmodel.bench --device cpu --frames 2
 .venv/bin/python -m worldmodel.bench --device cpu --frames 4
 make model-check
+.venv/bin/python -m worldmodel.candidate_bench --counts 1 2 4 8 --repeats 5 --output results/jepa_wm_pusht_candidate_cpu_macos_arm64.json
 ```
 
 The checkpoint is about 212 MB and remains in the ignored local cache. The source checkout also stays ignored. The benchmark validates both pins, the source tree's clean state, and the checkpoint hash before loading weights. `make model-check` additionally compares a quantized QKV slice from that checkpoint with the RTL tile. The [official model weights](https://huggingface.co/facebook/jepa-wms) and [upstream code](https://github.com/facebookresearch/jepa-wms) use CC BY-NC 4.0; this repo redistributes neither.
 
 ## Next hardware milestone
 
-The current predictor has 17.6 million parameters and takes 512 visual tokens for two frames or 1,024 for four frames. The measured four-frame predictor takes about 295 ms median on one Mac CPU thread; that is a comparison point, not an FPGA speedup claim. The next step is to profile its attention, MLP, and weight traffic on a suitable GPU and map one operator block through the AWS F2 toolchain, including host transfer and timing closure. See the [workload analysis](docs/research/world-model-workload.md) and [research index](docs/README.md).
+The current predictor has 17.6 million parameters and takes 512 visual tokens for two frames or 1,024 for four frames. The measured four-frame predictor takes about 295 ms median on one Mac CPU thread; that is a comparison point, not an FPGA speedup claim. For eight two-frame candidate actions, exact sharing of the visual input projection only improved measured CPU latency by about 4%; actions affect every transformer block. The four-candidate QKV tile reduces streamed weight bytes for its slice by 4× while using 4× the multipliers. The next step is to profile full-model weight traffic and GPU candidate throughput, then map the candidate tile through AWS F2 with host transfer and timing closure. See the [workload analysis](docs/research/world-model-workload.md) and [research index](docs/README.md).

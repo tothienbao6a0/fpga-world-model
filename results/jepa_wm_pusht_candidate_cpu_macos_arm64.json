@@ -1,0 +1,126 @@
+{
+  "model": "facebook/jepa-wms:jepa_wm_pusht predictor",
+  "upstream_commit": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
+  "checkpoint_sha256": "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb",
+  "input_kind": "synthetic_encoded_latents_actions_and_proprioception",
+  "measurement_scope": "predictor_only; no visual encoder, checkpoint load, or host transfer",
+  "device": "cpu",
+  "platform": "macOS-26.5.2-arm64-arm-64bit",
+  "torch_version": "2.7.0",
+  "cpu_threads": 1,
+  "precision": "torch.float32",
+  "frames": 2,
+  "latent_shape": [
+    1,
+    2,
+    1,
+    16,
+    16,
+    384
+  ],
+  "predictor_weight_bytes": 70505920,
+  "warmup": 1,
+  "repeats": 5,
+  "rows": [
+    {
+      "candidates": 1,
+      "major_macs_no_reuse": 7156531200,
+      "timings": {
+        "serial": {
+          "p50_ms": 76.37170900125057,
+          "min_ms": 75.12041699374095
+        },
+        "batch": {
+          "p50_ms": 75.98095800494775,
+          "min_ms": 75.69645799230784
+        },
+        "shared_input": {
+          "p50_ms": 76.95908399182372,
+          "min_ms": 76.21550001204014
+        }
+      },
+      "max_abs_error_vs_serial": {
+        "serial": 0.0,
+        "batch": 0.0,
+        "shared_input": 0.0
+      },
+      "batch_speedup_vs_serial": 1.005142749006631,
+      "shared_input_speedup_vs_serial": 0.9923676977413666
+    },
+    {
+      "candidates": 2,
+      "major_macs_no_reuse": 14313062400,
+      "timings": {
+        "serial": {
+          "p50_ms": 150.05012499750592,
+          "min_ms": 149.90774999023415
+        },
+        "batch": {
+          "p50_ms": 148.15179200377315,
+          "min_ms": 145.26745901093818
+        },
+        "shared_input": {
+          "p50_ms": 145.0554170005489,
+          "min_ms": 144.80545799597166
+        }
+      },
+      "max_abs_error_vs_serial": {
+        "serial": 0.0,
+        "batch": 8.296966552734375e-05,
+        "shared_input": 0.0
+      },
+      "batch_speedup_vs_serial": 1.0128134325481828,
+      "shared_input_speedup_vs_serial": 1.0344331021911308
+    },
+    {
+      "candidates": 4,
+      "major_macs_no_reuse": 28626124800,
+      "timings": {
+        "serial": {
+          "p50_ms": 301.15920800017193,
+          "min_ms": 297.46383300516754
+        },
+        "batch": {
+          "p50_ms": 288.6315419746097,
+          "min_ms": 287.1843749890104
+        },
+        "shared_input": {
+          "p50_ms": 291.37550000450574,
+          "min_ms": 289.2099999880884
+        }
+      },
+      "max_abs_error_vs_serial": {
+        "serial": 0.0,
+        "batch": 5.626678466796875e-05,
+        "shared_input": 6.222724914550781e-05
+      },
+      "batch_speedup_vs_serial": 1.0434036624682699,
+      "shared_input_speedup_vs_serial": 1.0335776617990013
+    },
+    {
+      "candidates": 8,
+      "major_macs_no_reuse": 57252249600,
+      "timings": {
+        "serial": {
+          "p50_ms": 603.9946670061909,
+          "min_ms": 597.5955830072053
+        },
+        "batch": {
+          "p50_ms": 587.4347909993958,
+          "min_ms": 582.5838750170078
+        },
+        "shared_input": {
+          "p50_ms": 577.698084001895,
+          "min_ms": 571.536167000886
+        }
+      },
+      "max_abs_error_vs_serial": {
+        "serial": 0.0,
+        "batch": 0.00010609626770019531,
+        "shared_input": 6.389617919921875e-05
+      },
+      "batch_speedup_vs_serial": 1.0281901519292413,
+      "shared_input_speedup_vs_serial": 1.0455195953258685
+    }
+  ]
+}

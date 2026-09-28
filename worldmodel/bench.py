@@ -39,31 +39,11 @@ def sync_device(torch, device: str) -> None:
         torch.mps.synchronize()
 
 
-def run_benchmark(
-    upstream: Path,
-    checkpoint: Path,
-    *,
-    device: str = "cpu",
-    batch: int = 1,
-    frames: int = 2,
-    warmup: int = 3,
-    repeats: int = 20,
-    cpu_threads: int = 1,
-) -> dict:
-    if batch < 1 or warmup < 0 or repeats < 1 or cpu_threads < 1:
-        raise ValueError("batch, repeats, and cpu_threads must be positive; warmup may be zero")
-    work = workload_macs(frames, batch)
+def load_predictor(upstream: Path, checkpoint: Path, device: str):
+    """Verify and load the pinned official predictor and proprioception encoder."""
     verify_source(upstream)
     checkpoint_sha = verify_checkpoint(checkpoint)
-
     import torch
-
-    if device == "cuda" and not torch.cuda.is_available():
-        raise ValueError("CUDA is unavailable")
-    if device == "mps" and not torch.backends.mps.is_available():
-        raise ValueError("MPS is unavailable")
-    if device == "cpu":
-        torch.set_num_threads(cpu_threads)
 
     sys.path.insert(0, str(upstream))
     from app.plan_common.models.AdaLN_vit import VisionTransformerAdaLN
@@ -90,6 +70,33 @@ def run_benchmark(
     proprio_weights = {name.removeprefix("module."): value for name, value in payload["proprio_encoder"].items()}
     proprio_encoder.load_state_dict(proprio_weights, strict=True)
     proprio_encoder = proprio_encoder.to(device).eval()
+
+    return predictor, proprio_encoder, predictor_weights, checkpoint_sha
+
+
+def run_benchmark(
+    upstream: Path,
+    checkpoint: Path,
+    *,
+    device: str = "cpu",
+    batch: int = 1,
+    frames: int = 2,
+    warmup: int = 3,
+    repeats: int = 20,
+    cpu_threads: int = 1,
+) -> dict:
+    if batch < 1 or warmup < 0 or repeats < 1 or cpu_threads < 1:
+        raise ValueError("batch, repeats, and cpu_threads must be positive; warmup may be zero")
+    work = workload_macs(frames, batch)
+    import torch
+
+    if device == "cuda" and not torch.cuda.is_available():
+        raise ValueError("CUDA is unavailable")
+    if device == "mps" and not torch.backends.mps.is_available():
+        raise ValueError("MPS is unavailable")
+    if device == "cpu":
+        torch.set_num_threads(cpu_threads)
+    predictor, proprio_encoder, predictor_weights, checkpoint_sha = load_predictor(upstream, checkpoint, device)
 
     generator = torch.Generator(device="cpu").manual_seed(1907)
     latent = torch.randn(batch, frames, 1, MODEL.grid_side, MODEL.grid_side, MODEL.latent_dim, generator=generator).to(device)
