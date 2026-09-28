@@ -6,7 +6,9 @@
 - I want to inspect the first real-model hardware block: [INT8 QKV tile and its limits](research/world-model-workload.md#first-hardware-block).
 - I want to see whether candidate actions share useful work: [candidate-action measurements and broadcast tile](research/world-model-workload.md#candidate-action-reuse).
 - I want to see INT8 error on actual predictor activations: [QKV activation probe](research/world-model-workload.md#checkpoint-activation-probe).
+- I want to see the mapped tile resource cost: [UltraScale+ resource comparison](research/world-model-workload.md#ultrascale-resource-mapping).
 - I want to review what changed in the pivot: [agent handoff](agents/checkpoint-workload.md).
 - I want to review the candidate-action increment: [candidate reuse handoff](agents/candidate-action-reuse.md).
 - I want to review the checkpoint activation probe: [probe handoff](agents/checkpoint-activation-probe.md).
+- I want to review the resource mapping: [mapping handoff](agents/xcup-resource-mapping.md).
 - I want the previous planning prototype: [archived prototype](../archive/planning-prototype/README.md).

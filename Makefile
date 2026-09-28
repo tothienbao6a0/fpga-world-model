@@ -1,6 +1,6 @@
-.PHONY: check model-check rtl-synth
+.PHONY: check model-check rtl-synth xcup-report
 
-check: rtl-synth
+check: rtl-synth xcup-report
 	python3 -m unittest discover -s worldmodel -p '*_test.py'
 	python3 -m worldmodel.verify_rtl
 	python3 -m worldmodel.verify_candidate_rtl
@@ -8,6 +8,9 @@ check: rtl-synth
 rtl-synth:
 	yosys -Q -T -q -p 'read_verilog -sv rtl/qkv_tile.sv; hierarchy -top qkv_tile; synth -top qkv_tile -noabc; check -assert'
 	yosys -Q -T -q -p 'read_verilog -sv rtl/qkv_candidate_tile.sv; hierarchy -top qkv_candidate_tile; synth -top qkv_candidate_tile -noabc; check -assert'
+
+xcup-report:
+	python3 -m worldmodel.resource_report
 
 model-check:
 	.venv/bin/python -m worldmodel.bench --device cpu --frames 2

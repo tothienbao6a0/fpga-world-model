@@ -1,0 +1,41 @@
+{
+  "tool": "Yosys 0.69+post (git sha1 143eb14f9cc55d6f8927e68523b0c9d2166ed02c, Release, AppleClang clang++ 21.0.0.21000101)",
+  "mapping": "Yosys synth_xilinx -family xcup -noiopad -noclkbuf",
+  "scope": "out-of-context, unplaced primitive mapping; no F2 shell, routing, timing, or power",
+  "parameters": {
+    "lanes": 16,
+    "inputs": 400,
+    "single_candidates": 1,
+    "broadcast_candidates": 4
+  },
+  "tiles": {
+    "single_candidate": {
+      "DSP48E2": 16,
+      "LUT2": 517,
+      "LUT3": 1,
+      "LUT4": 6,
+      "LUT5": 3,
+      "LUT6": 512,
+      "CARRY4": 136,
+      "FDRE": 546,
+      "LUT_total": 1039
+    },
+    "four_candidates": {
+      "DSP48E2": 64,
+      "LUT2": 2053,
+      "LUT3": 1,
+      "LUT4": 6,
+      "LUT5": 3,
+      "LUT6": 2048,
+      "CARRY4": 520,
+      "FDRE": 2082,
+      "LUT_total": 4111
+    }
+  },
+  "broadcast_to_single_ratio": {
+    "DSP48E2": 4.0,
+    "LUT_total": 3.956689124157844,
+    "CARRY4": 3.823529411764706,
+    "FDRE": 3.8131868131868134
+  }
+}
