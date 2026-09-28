@@ -1,5 +1,7 @@
 # Research index
 
+- I want to build or verify the hardware prototype: [rollout engine interface and limits](hardware/rollout-engine.md).
+- I want to review the hardware implementation: [hardware handoff](agents/rtl-rollout-engine.md).
 - I want to run the first decision-trace baseline: [repo overview and commands](../README.md).
 - I want to see what the first benchmark found: [toy precision experiment](experiments/001-toy-precision.md).
 - I want to see what changed under model error: [nonlinear model-mismatch experiment](experiments/002-model-mismatch.md).

@@ -1,14 +1,24 @@
-# FPGA world-model planning research
+# FPGA world-model planning prototype
 
-This repository is investigating whether an FPGA can improve **decision latency and energy** for planning with a small learned latent dynamics model. The current working idea is a deadline-aware scheduler that evaluates candidate action futures, spends more work on close decisions, and returns an action before a fixed control deadline.
+This repo now contains a **synthesizable planning engine**, its bit-exact software reference, and a small closed-loop benchmark. It tests a concrete hardware question: can a fixed-point circuit evaluate candidate futures for a learned dynamics model and choose an action within a predictable cycle budget?
 
-This is a research hypothesis, not a demonstrated speedup or a settled novelty claim. The first runnable baseline is now in `worldbench/`. It learns a two-state linear dynamics model from simulator transitions, searches candidate action sequences, and repeats the task with full-precision, fixed-point, and selective-refinement planning. It records action flips, model-relative score regret, final task cost, rollout count, and Python planning time.
+The first engine is intentionally narrow. It rolls out a learned two-state linear model using Q8.8 arithmetic, scores nine streamed four-step plans, and returns the first action of the lowest-cost plan. The toy simulator and model fitting live in `worldbench/`; the hardware, reference, and verification live in `fpga/`.
+
+## Run it
+
+Install Python 3, [Icarus Verilog](https://steveicarus.github.io/iverilog/), and [Yosys](https://yosyshq.net/yosys/). On macOS, `brew install icarus-verilog yosys` provides the two hardware tools. Then run:
 
 ```sh
-python3 -m unittest discover -s worldbench -p '*_test.py'
-python3 -m worldbench --episodes 12 --steps 12 --horizon 4 --bits 3 5 8 --refine-top-k 2 --trace traces/first-run.jsonl
+make check
+python3 -m fpga.bench
+python3 -m fpga.bench --environment nonlinear
+make synth-report
 ```
 
-The summary prints as JSON; `--trace` writes one JSON line per control decision. `--refine-top-k 0` disables selective refinement. Add `--environment nonlinear` to evaluate the linear learned model against dynamics it cannot represent exactly. The output includes held-out one-step prediction error. Both environments are **toy workloads**: candidate search is exhaustive, and Python fixed-point emulation is slower than floating point. The timing numbers are only a software baseline, not FPGA performance or energy evidence. Read the [first](docs/experiments/001-toy-precision.md) and [second](docs/experiments/002-model-mismatch.md) experiments for results and limitations. The next build is a more realistic checkpoint-backed decision trace and a hardware cost model.
+`make check` runs unit tests, compiles and simulates the RTL against 22 bit-exact cases, and checks that Yosys can synthesize the top module. `fpga.bench` compares the fixed-point hardware arithmetic contract with floating-point planning in the same toy control task. `make synth-report` reports generic logic cells, **not** resources or timing for a chosen FPGA.
 
-Start with [the research index](docs/README.md), [the September 2026 evidence review](docs/research/2026-09-direction-review.md), and [the broader opportunity map](docs/research/2026-09-opportunity-map.md).
+## Current result
+
+With the default 24 episodes and 16 decisions per episode, the fixed-point contract changed the locally chosen action on 4.43% of linear-environment decisions and 3.91% of nonlinear-environment decisions relative to floating-point planning. Each decision streams 36 actions after a start cycle, so the ideal uninterrupted engine schedule is 37 cycles. These are reproducible toy-model results and a cycle count from the interface contract. There is no board implementation, measured clock rate, end-to-end latency, power result, or comparison with a GPU yet.
+
+Start with the [hardware interface and limits](docs/hardware/rollout-engine.md), the [research index](docs/README.md), and the [September 2026 evidence review](docs/research/2026-09-direction-review.md).
