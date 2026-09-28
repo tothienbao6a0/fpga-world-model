@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from random import Random
 from time import perf_counter_ns
+from typing import Callable
 
 from worldbench.dynamics import LinearWorldModel, State, step
 from worldbench.planner import candidate_sequences, choose_action, choose_action_refined
@@ -46,6 +47,7 @@ def run_episode(
     horizon: int,
     bits: int | None,
     refine_top_k: int = 0,
+    dynamics: Callable[[State, int], State] = step,
 ) -> tuple[list[Trace], float]:
     if steps < 1:
         raise ValueError("steps must be positive")
@@ -74,7 +76,7 @@ def run_episode(
                 decision.margin, planning_ns, decision.transitions,
             )
         )
-        state = step(state, decision.action)
+        state = dynamics(state, decision.action)
     final_cost = (state[0] - target) ** 2 + 0.15 * state[1] ** 2
     return traces, final_cost
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from random import Random
+from typing import Callable
 
 State = tuple[float, float]
 Action = int
@@ -14,6 +15,13 @@ def step(state: State, action: Action) -> State:
     """Reference environment: a damped point mass with bounded acceleration."""
     position, velocity = state
     next_velocity = 0.82 * velocity + 0.32 * action
+    return position + next_velocity, next_velocity
+
+
+def nonlinear_step(state: State, action: Action) -> State:
+    """A dissipative system the linear model cannot represent exactly."""
+    position, velocity = state
+    next_velocity = 0.82 * velocity + 0.32 * action - 0.12 * velocity * abs(velocity)
     return position + next_velocity, next_velocity
 
 
@@ -81,7 +89,9 @@ def fit_model(samples: list[tuple[State, Action, State]], ridge: float = 1e-8) -
     return LinearWorldModel(_solve(gram, targets[0]), _solve(gram, targets[1]))
 
 
-def training_samples(count: int, seed: int) -> list[tuple[State, Action, State]]:
+def training_samples(
+    count: int, seed: int, dynamics: Callable[[State, Action], State] = step
+) -> list[tuple[State, Action, State]]:
     if count < FEATURES:
         raise ValueError(f"count must be at least {FEATURES}")
     rng = Random(seed)
@@ -89,5 +99,17 @@ def training_samples(count: int, seed: int) -> list[tuple[State, Action, State]]
     for _ in range(count):
         state = (rng.uniform(-2, 2), rng.uniform(-1, 1))
         action = rng.choice((-1, 0, 1))
-        samples.append((state, action, step(state, action)))
+        samples.append((state, action, dynamics(state, action)))
     return samples
+
+
+def mean_absolute_prediction_error(
+    model: LinearWorldModel, samples: list[tuple[State, Action, State]]
+) -> float:
+    if not samples:
+        raise ValueError("samples must not be empty")
+    return sum(
+        abs(predicted - actual)
+        for state, action, next_state in samples
+        for predicted, actual in zip(model.predict(state, action), next_state)
+    ) / (2 * len(samples))

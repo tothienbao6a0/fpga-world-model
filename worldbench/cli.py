@@ -7,7 +7,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 
-from worldbench.dynamics import fit_model, training_samples
+from worldbench.dynamics import fit_model, mean_absolute_prediction_error, nonlinear_step, step, training_samples
 from worldbench.experiment import initial_conditions, run_episode, summarize
 
 
@@ -18,6 +18,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--horizon", type=int, default=4)
     parser.add_argument("--train-samples", type=int, default=256)
     parser.add_argument("--seed", type=int, default=7)
+    parser.add_argument("--environment", choices=("linear", "nonlinear"), default="linear")
     parser.add_argument("--bits", type=int, nargs="+", default=[3, 5, 8])
     parser.add_argument("--refine-top-k", type=int, default=2, help="full-precision finalists per first action; 0 disables refinement")
     parser.add_argument("--trace", type=Path, help="write per-decision JSONL here")
@@ -28,8 +29,10 @@ def main(argv: list[str] | None = None) -> int:
         parser.error("--bits values must be nonnegative")
     if args.refine_top_k < 0:
         parser.error("--refine-top-k must be nonnegative")
+    dynamics = step if args.environment == "linear" else nonlinear_step
     try:
-        model = fit_model(training_samples(args.train_samples, args.seed))
+        model = fit_model(training_samples(args.train_samples, args.seed, dynamics))
+        held_out_error = mean_absolute_prediction_error(model, training_samples(256, args.seed + 2, dynamics))
         conditions = initial_conditions(args.episodes, args.seed + 1)
     except ValueError as error:
         parser.error(str(error))
@@ -43,7 +46,7 @@ def main(argv: list[str] | None = None) -> int:
     for bits, refine_top_k in modes:
         traces, costs = [], []
         for episode, (state, target) in enumerate(conditions):
-            episode_traces, cost = run_episode(model, state, target, episode, args.steps, args.horizon, bits, refine_top_k)
+            episode_traces, cost = run_episode(model, state, target, episode, args.steps, args.horizon, bits, refine_top_k, dynamics)
             traces.extend(episode_traces)
             costs.append(cost)
         label = "full" if bits is None else str(bits) + (f"+refine{refine_top_k}" if refine_top_k else "")
@@ -54,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         with args.trace.open("w", encoding="utf-8") as output:
             for trace in all_traces:
                 output.write(json.dumps(asdict(trace), allow_nan=False) + "\n")
-    print(json.dumps({"model": asdict(model), "settings": vars(args) | {"trace": str(args.trace) if args.trace else None}, "results": summaries}, indent=2, allow_nan=False))
+    print(json.dumps({"model": asdict(model), "held_out_one_step_mae": held_out_error, "settings": vars(args) | {"trace": str(args.trace) if args.trace else None}, "results": summaries}, indent=2, allow_nan=False))
     return 0
 
 

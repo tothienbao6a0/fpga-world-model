@@ -1,6 +1,6 @@
 import unittest
 
-from worldbench.dynamics import fit_model, quantize, training_samples
+from worldbench.dynamics import fit_model, mean_absolute_prediction_error, nonlinear_step, quantize, training_samples
 
 
 class DynamicsTest(unittest.TestCase):
@@ -19,6 +19,12 @@ class DynamicsTest(unittest.TestCase):
     def test_empty_training_data_rejected(self):
         with self.assertRaises(ValueError):
             fit_model([])
+
+    def test_nonlinear_environment_exposes_model_mismatch(self):
+        model = fit_model(training_samples(256, 7, nonlinear_step))
+        error = mean_absolute_prediction_error(model, training_samples(256, 9, nonlinear_step))
+        self.assertGreater(error, 0.005)
+        self.assertLess(error, 0.05)
 
 
 if __name__ == "__main__":

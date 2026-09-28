@@ -29,6 +29,12 @@ class CliTest(unittest.TestCase):
                 main(["--horizon", "0"])
         self.assertEqual(raised.exception.code, 2)
 
+    def test_nonlinear_environment_reports_model_error(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            main(["--environment", "nonlinear", "--episodes", "1", "--steps", "1", "--horizon", "2", "--refine-top-k", "0"])
+        self.assertGreater(json.loads(output.getvalue())["held_out_one_step_mae"], 0.005)
+
 
 if __name__ == "__main__":
     unittest.main()

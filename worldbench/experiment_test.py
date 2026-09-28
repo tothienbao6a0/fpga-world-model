@@ -18,6 +18,12 @@ class ExperimentTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             initial_conditions(0, 1)
 
+    def test_episode_uses_selected_environment_dynamics(self):
+        model = fit_model(training_samples(256, 7))
+        frozen = lambda state, action: state
+        _, cost = run_episode(model, (0.25, 0.0), 1.0, 0, 3, 2, None, dynamics=frozen)
+        self.assertAlmostEqual(cost, 0.75 ** 2)
+
 
 if __name__ == "__main__":
     unittest.main()
