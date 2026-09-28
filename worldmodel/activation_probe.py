@@ -103,7 +103,7 @@ def probe(
         captured_inputs.append(args[0].detach().cpu())
 
     def capture_output(_module, _args, output):
-        captured_outputs.append(output[:, :, :16].detach().cpu())
+        captured_outputs.append(output.detach().cpu())
 
     before = qkv.register_forward_pre_hook(capture_input)
     after = qkv.register_forward_hook(capture_output)
@@ -126,8 +126,8 @@ def probe(
     biases = tuple(qkv.bias[:16].detach().cpu().tolist())
     full_errors = {
         scope: full_qkv_error_stats(
-            captured_inputs[0], captured_outputs[0], qkv.weight[:16].detach().cpu(),
-            qkv.bias[:16].detach().cpu(), scope,
+            captured_inputs[0], captured_outputs[0], qkv.weight.detach().cpu(),
+            qkv.bias.detach().cpu(), scope,
         )
         for scope in ("token", "layer")
     }
@@ -135,7 +135,7 @@ def probe(
     rows = []
     for token_index in token_indices:
         float_activations = tuple(tuple(row) for row in captured_inputs[0][:, token_index, :].tolist())
-        reference = tuple(tuple(row) for row in captured_outputs[0][:, token_index, :].tolist())
+        reference = tuple(tuple(row) for row in captured_outputs[0][:, token_index, :16].tolist())
         modes = {}
         for name, scale in (("token_scale", None), ("layer_scale", layer_activation_scale)):
             quantized_activations, quantized_weights, quantized_biases, activation_scale, weight_scales = (
@@ -161,7 +161,7 @@ def probe(
         "upstream_commit": MODEL.upstream_commit,
         "checkpoint_sha256": digest,
         "input_kind": "synthetic_encoded_latents_actions_and_proprioception; actual_block_0_qkv_activations",
-        "measurement_scope": "all tokens for first 16 QKV rows in software; sampled tokens in RTL; no full-model INT8 quality or FPGA latency",
+        "measurement_scope": "all tokens and 1200 QKV rows in software; sampled tokens and 16 rows in RTL; no full-model INT8 quality or FPGA latency",
         "device": device,
         "platform": platform.platform(),
         "torch_version": torch.__version__,
@@ -174,7 +174,7 @@ def probe(
         "tile_input_columns": MODEL.predictor_dim,
         "layer_activation_scale": layer_activation_scale,
         "traffic": traffic_bytes(16, MODEL.predictor_dim, candidates),
-        "full_16_row_software_quantization": full_errors,
+        "full_qkv_software_quantization": full_errors,
         "samples": rows,
     }
 

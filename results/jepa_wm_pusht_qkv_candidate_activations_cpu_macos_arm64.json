@@ -3,7 +3,7 @@
   "upstream_commit": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
   "checkpoint_sha256": "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb",
   "input_kind": "synthetic_encoded_latents_actions_and_proprioception; actual_block_0_qkv_activations",
-  "measurement_scope": "all tokens for first 16 QKV rows in software; sampled tokens in RTL; no full-model INT8 quality or FPGA latency",
+  "measurement_scope": "all tokens and 1200 QKV rows in software; sampled tokens and 16 rows in RTL; no full-model INT8 quality or FPGA latency",
   "device": "cpu",
   "platform": "macOS-26.5.2-arm64-arm-64bit",
   "torch_version": "2.7.0",
@@ -21,20 +21,20 @@
     "activation_bytes_both": 1600,
     "macs_both": 25600
   },
-  "full_16_row_software_quantization": {
+  "full_qkv_software_quantization": {
     "token": {
-      "max_abs_error": 0.2970552444458008,
-      "p95_abs_error": 0.12707392871379852,
-      "rmse": 0.06394411623477936,
-      "relative_l2_error": 0.019590476709557787,
-      "values_compared": 32768
+      "max_abs_error": 0.6909761428833008,
+      "p95_abs_error": 0.12553513050079346,
+      "rmse": 0.06341332942247391,
+      "relative_l2_error": 0.016574444092711315,
+      "values_compared": 2457600
     },
     "layer": {
-      "max_abs_error": 0.35958147048950195,
-      "p95_abs_error": 0.15447111427783966,
-      "rmse": 0.07754745334386826,
-      "relative_l2_error": 0.02375811600859,
-      "values_compared": 32768
+      "max_abs_error": 0.7757186889648438,
+      "p95_abs_error": 0.1490797996520996,
+      "rmse": 0.0753275528550148,
+      "relative_l2_error": 0.019688696946003836,
+      "values_compared": 2457600
     }
   },
   "samples": [

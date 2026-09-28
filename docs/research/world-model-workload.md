@@ -44,14 +44,14 @@ The eight-candidate CPU gain from exact input sharing was 4.6%, with only five s
 
 ## Checkpoint activation probe
 
-The [activation probe result](../../results/jepa_wm_pusht_qkv_candidate_activations_cpu_macos_arm64.json) advances the tile input from arbitrary vectors to **actual block-0 QKV activations** captured while the official checkpoint evaluates four different actions against one synthetic encoded visual context. Candidate QKV inputs differ (sampled maximum absolute differences from candidate 0: 0.72–1.30). For the first 16 of 1,200 QKV output rows, software INT8 quantization was compared against the official FP32 QKV outputs at all 512 tokens and four candidates, or 32,768 scalar outputs:
+The [activation probe result](../../results/jepa_wm_pusht_qkv_candidate_activations_cpu_macos_arm64.json) advances the tile input from arbitrary vectors to **actual block-0 QKV activations** captured while the official checkpoint evaluates four different actions against one synthetic encoded visual context. Candidate QKV inputs differ (sampled maximum absolute differences from candidate 0: 0.72–1.30). Software INT8 quantization was compared against the official FP32 QKV outputs at all 512 tokens, 1,200 output rows, and four candidates, or 2,457,600 scalar outputs:
 
 | Activation scale | Relative L2 error | p95 absolute error | Max absolute error |
 | --- | ---: | ---: | ---: |
-| One scale per token, shared across candidates | 1.96% | 0.127 | 0.297 |
-| One scale for the layer, shared across tokens and candidates | 2.38% | 0.154 | 0.360 |
+| One scale per token, shared across candidates | 1.66% | 0.126 | 0.691 |
+| One scale for the layer, shared across tokens and candidates | 1.97% | 0.149 | 0.776 |
 
-Weights use a symmetric scale per output row; biases are quantized into the corresponding INT32 accumulator scale. For four sampled tokens (0, 255, 256, 511), both scaling modes passed RTL simulation against the integer oracle for all four candidates and 16 output rows. The layer scale is simpler to supply to hardware but had higher error in this one synthetic-context probe. The full 32,768-output error study is software quantization; RTL checked 512 scalar outputs across the four sampled tokens and two scaling modes. These measurements do not establish full-model accuracy, task quality on Push-T, or FPGA timing.
+Weights use a symmetric scale per output row; biases are quantized into the corresponding INT32 accumulator scale. For four sampled tokens (0, 255, 256, 511), both scaling modes passed RTL simulation against the integer oracle for all four candidates and the first 16 output rows. The layer scale is simpler to supply to hardware but had higher error in this one synthetic-context probe. The 2,457,600-output error study is software quantization; RTL checked 512 scalar outputs across the four sampled tokens and two scaling modes. These measurements do not establish full-model accuracy, task quality on Push-T, or FPGA timing. CUDA and MPS were unavailable on this Mac, so a GPU candidate-throughput comparison remains open.
 
 Next work: profile operator time and memory traffic on a GPU; obtain real encoded Push-T trajectories and ground-truth future latents; measure prediction quality before quantization; then implement and validate a single chosen operator in the F2 shell. The [official dataset](https://huggingface.co/datasets/facebook/jepa-wms) requires accepting access conditions, so no task data was downloaded in this run. This repo does not currently include a bitstream or cloud FPGA result.
 
