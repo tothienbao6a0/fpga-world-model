@@ -11,14 +11,15 @@ Install Python 3, [Icarus Verilog](https://steveicarus.github.io/iverilog/), and
 ```sh
 make check
 python3 -m fpga.bench
-python3 -m fpga.bench --environment nonlinear
+python3 -m fpga.bench --candidate-bank exhaustive
+python3 -m fpga.sweep
 make synth-report
 ```
 
-`make check` runs unit tests, compiles and simulates the RTL against 22 bit-exact cases, and checks that Yosys can synthesize the top module. `fpga.bench` compares the fixed-point hardware arithmetic contract with floating-point planning in the same toy control task. `make synth-report` reports generic logic cells, **not** resources or timing for a chosen FPGA.
+`make check` runs unit tests, compiles and simulates the RTL against 23 bit-exact cases, including an 81-plan stream, and checks that Yosys can synthesize the top module. `fpga.bench` compares the fixed-point hardware arithmetic contract with floating-point planning in the same toy control task. `fpga.sweep` repeats both candidate banks and environments across five seeds. `make synth-report` reports generic logic cells, **not** resources or timing for a chosen FPGA.
 
 ## Current result
 
-With the default 24 episodes and 16 decisions per episode, the fixed-point contract changed the locally chosen action on 4.43% of linear-environment decisions and 3.91% of nonlinear-environment decisions relative to floating-point planning. Each decision streams 36 actions after a start cycle, so the ideal uninterrupted engine schedule is 37 cycles. These are reproducible toy-model results and a cycle count from the interface contract. There is no board implementation, measured clock rate, end-to-end latency, power result, or comparison with a GPU yet.
+With the default nine-plan bank, each decision streams 36 actions after a start cycle, so the ideal uninterrupted engine schedule is 37 cycles. The exhaustive 81-plan bank takes 325 cycles. Across five toy-workload seeds, exhaustive search reduced local fixed-point action disagreements with the floating-point planner but increased mean final task cost in both environments. See the [candidate-breadth experiment](docs/experiments/003-candidate-breadth.md) for exact results. There is no board implementation, measured clock rate, end-to-end latency, power result, or comparison with a GPU yet.
 
 Start with the [hardware interface and limits](docs/hardware/rollout-engine.md), the [research index](docs/README.md), and the [September 2026 evidence review](docs/research/2026-09-direction-review.md).

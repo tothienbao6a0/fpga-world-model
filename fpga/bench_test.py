@@ -8,12 +8,19 @@ class BenchTest(unittest.TestCase):
         bank = candidate_bank()
         self.assertEqual(len(bank), 9)
         self.assertEqual({sequence[0] for sequence in bank}, {-1, 0, 1})
+        exhaustive = candidate_bank(True)
+        self.assertEqual(len(exhaustive), 81)
+        self.assertEqual(len(set(exhaustive)), 81)
+        self.assertTrue(set(bank).issubset(exhaustive))
 
     def test_closed_loop_contract_runs(self):
         result = run_benchmark(2, 3, 7, False)
         self.assertEqual(result["decisions"], 6)
         self.assertEqual(result["ideal_stream_cycles_per_decision"], 37)
         self.assertGreaterEqual(result["hardware_contract_mean_final_cost"], 0)
+        full = run_benchmark(2, 3, 7, False, True)
+        self.assertEqual(full["candidate_count"], 81)
+        self.assertEqual(full["ideal_stream_cycles_per_decision"], 325)
 
 
 if __name__ == "__main__":

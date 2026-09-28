@@ -14,9 +14,9 @@ The engine processes one action per accepted cycle. With no bubbles, the default
 
 ## Reproduce the current checks
 
-Run `make check` from the repo root. `fpga/verify.py` compiles the RTL with Icarus Verilog, streams 22 cases, and compares both output fields against the Python oracle. Cases include learned weights from linear and nonlinear training sets, a tie, Q8.8 saturation, and bubbles in the action stream. Yosys checks generic synthesis and structural correctness. Run `make synth-report` to inspect the generic cell breakdown.
+Run `make check` from the repo root. `fpga/verify.py` compiles the RTL with Icarus Verilog, streams 23 cases, and compares both output fields against the Python oracle. Cases include learned weights from linear and nonlinear training sets, a tie, Q8.8 saturation, bubbles, and one complete 81-plan stream. Yosys checks generic synthesis and structural correctness. Run `make synth-report` to inspect the generic cell breakdown.
 
-Run `python3 -m fpga.bench` and `python3 -m fpga.bench --environment nonlinear` to compare closed-loop decisions with the floating-point planner. The default nine-plan bank covers all first actions but is much smaller than the exhaustive 81-plan bank in the original four-step software baseline. Both planners in this comparison use the same nine plans.
+Run `python3 -m fpga.bench` and `python3 -m fpga.bench --candidate-bank exhaustive` to compare closed-loop decisions with the floating-point planner. The default nine-plan bank covers all first actions; the exhaustive option includes all 81 four-step plans from the original software baseline. In either mode, both planners use the same candidate bank. Run `python3 -m fpga.sweep` for the five-seed comparison.
 
 The local tools checked for this prototype were Icarus Verilog 13.0 and Yosys 0.69. Their official upstream projects publish releases and maintain active source repositories: [Icarus Verilog](https://github.com/steveicarus/iverilog) and [Yosys](https://github.com/YosysHQ/yosys). Both are established Homebrew packages; no Python package dependency was added.
 

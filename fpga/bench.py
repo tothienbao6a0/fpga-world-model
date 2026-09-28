@@ -9,21 +9,23 @@ from itertools import product
 from fpga.reference import evaluate, model_weights, to_q
 from worldbench.dynamics import fit_model, nonlinear_step, step, training_samples
 from worldbench.experiment import initial_conditions
-from worldbench.planner import choose_action
+from worldbench.planner import candidate_sequences, choose_action
 
 
-def candidate_bank() -> tuple[tuple[int, ...], ...]:
-    """Nine length-four plans; all three first actions are represented."""
+def candidate_bank(exhaustive: bool = False) -> tuple[tuple[int, ...], ...]:
+    """Use all 81 plans or the nine-plan bank with two trailing idle actions."""
+    if exhaustive:
+        return candidate_sequences(4)
     return tuple((first, second, 0, 0) for first, second in product((-1, 0, 1), repeat=2))
 
 
-def run_benchmark(episodes: int, steps: int, seed: int, nonlinear: bool) -> dict:
+def run_benchmark(episodes: int, steps: int, seed: int, nonlinear: bool, exhaustive: bool = False) -> dict:
     if episodes < 1 or steps < 1:
         raise ValueError("episodes and steps must be positive")
     dynamics = nonlinear_step if nonlinear else step
     model = fit_model(training_samples(256, seed, dynamics))
     position_weights, velocity_weights = model_weights(model)
-    candidates = candidate_bank()
+    candidates = candidate_bank(exhaustive)
     flips = 0
     hardware_final_costs = []
     float_final_costs = []
@@ -45,6 +47,7 @@ def run_benchmark(episodes: int, steps: int, seed: int, nonlinear: bool) -> dict
         "episodes": episodes,
         "decisions": episodes * steps,
         "environment": "nonlinear" if nonlinear else "linear",
+        "candidate_bank": "exhaustive" if exhaustive else "sparse",
         "candidate_count": len(candidates),
         "horizon": len(candidates[0]),
         "ideal_stream_cycles_per_decision": 1 + len(candidates) * len(candidates[0]),
@@ -60,9 +63,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--steps", type=int, default=16)
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--environment", choices=("linear", "nonlinear"), default="linear")
+    parser.add_argument("--candidate-bank", choices=("sparse", "exhaustive"), default="sparse")
     args = parser.parse_args(argv)
     try:
-        result = run_benchmark(args.episodes, args.steps, args.seed, args.environment == "nonlinear")
+        result = run_benchmark(args.episodes, args.steps, args.seed, args.environment == "nonlinear", args.candidate_bank == "exhaustive")
     except ValueError as error:
         parser.error(str(error))
     print(json.dumps(result, indent=2))
