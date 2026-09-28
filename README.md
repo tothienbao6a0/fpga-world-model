@@ -8,6 +8,7 @@ This repository studies **the inference workload of a trained visual world model
 - `worldmodel/spec.py` pins the upstream commit and checkpoint revision and rejects a mismatched architecture.
 - `rtl/qkv_tile.sv` is a synthesizable 16-lane INT8 matrix-vector tile for the real predictor's 1,200×400 QKV projection. The simulator checks a 16×400 slice quantized from the checkpoint against an integer software reference; the generic synthesis check runs in `make check`.
 - `worldmodel/candidate_bench.py` measures multiple action candidates sharing one visual context. `rtl/qkv_candidate_tile.sv` broadcasts each QKV weight to four candidates in parallel; simulation checks a quantized 16×400 checkpoint slice. This tests a weight-traffic idea, not full-model FPGA acceleration.
+- `worldmodel/activation_probe.py` captures block-0 QKV inputs from four actual predictor candidate forwards, measures INT8 error across all 512 tokens for the first 16 QKV rows, and drives sampled activations through the RTL simulator.
 - `results/` contains the first one-thread macOS CPU measurements for two and four input frames. These are real **checkpoint-backed predictor** runs. The inputs are synthetic latents, so the numbers are not end-to-end video inference or prediction-quality results.
 
 ## Reproduce
@@ -27,6 +28,7 @@ git -C .model-cache/jepa-wms checkout 13cf1d9c7e476f53c17714d2e0f1dc239a883ce0
 .venv/bin/python -m worldmodel.bench --device cpu --frames 4
 make model-check
 .venv/bin/python -m worldmodel.candidate_bench --counts 1 2 4 8 --repeats 5 --output results/jepa_wm_pusht_candidate_cpu_macos_arm64.json
+.venv/bin/python -m worldmodel.activation_probe --output results/jepa_wm_pusht_qkv_candidate_activations_cpu_macos_arm64.json
 ```
 
 The checkpoint is about 212 MB and remains in the ignored local cache. The source checkout also stays ignored. The benchmark validates both pins, the source tree's clean state, and the checkpoint hash before loading weights. `make model-check` additionally compares a quantized QKV slice from that checkpoint with the RTL tile. The [official model weights](https://huggingface.co/facebook/jepa-wms) and [upstream code](https://github.com/facebookresearch/jepa-wms) use CC BY-NC 4.0; this repo redistributes neither.

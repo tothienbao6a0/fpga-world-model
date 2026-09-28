@@ -14,3 +14,5 @@ model-check:
 	.venv/bin/python -m worldmodel.verify_rtl --checkpoint .model-cache/models--facebook--jepa-wms/snapshots/bb2d9cf0ee9060f83103b134d7c52e82bf7e2a47/jepa_wm_pusht.pth.tar
 	.venv/bin/python -m worldmodel.candidate_bench --counts 1 2 --repeats 1 --warmup 0
 	.venv/bin/python -m worldmodel.verify_candidate_rtl --checkpoint .model-cache/models--facebook--jepa-wms/snapshots/bb2d9cf0ee9060f83103b134d7c52e82bf7e2a47/jepa_wm_pusht.pth.tar
+	.venv/bin/python -m unittest worldmodel.activation_probe_test worldmodel.quant_test
+	.venv/bin/python -m worldmodel.activation_probe --tokens 0
