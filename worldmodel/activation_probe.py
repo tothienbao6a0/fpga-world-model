@@ -77,6 +77,30 @@ def full_qkv_error_stats(inputs, reference, weights, biases, scale_scope: str) -
     }
 
 
+def verify_sampled_tile(
+    float_activations: tuple[tuple[float, ...], ...],
+    reference: tuple[tuple[float, ...], ...],
+    weights: tuple[tuple[float, ...], ...],
+    biases: tuple[float, ...],
+    layer_activation_scale: float,
+) -> dict:
+    modes = {}
+    for name, scale in (("token_scale", None), ("layer_scale", layer_activation_scale)):
+        quantized_activations, quantized_weights, quantized_biases, activation_scale, weight_scales = (
+            quantize_candidate_tile(float_activations, weights, biases, activation_scale=scale)
+        )
+        integer_outputs = tuple(quantized_tile(row, quantized_weights, quantized_biases)
+                                for row in quantized_activations)
+        rtl_result = verify(quantized_activations, quantized_weights, quantized_biases)
+        reconstructed = dequantized_outputs(integer_outputs, activation_scale, weight_scales)
+        modes[name] = {
+            "rtl_result": rtl_result,
+            "activation_scale": activation_scale,
+            **error_stats(reference, reconstructed),
+        }
+    return modes
+
+
 def probe(
     upstream: Path, checkpoint: Path, *, frames: int = 2,
     candidates: int = 4, token_indices: tuple[int, ...] = (0, 255, 256, 511),
@@ -122,8 +146,6 @@ def probe(
     if len(captured_inputs) != 1 or len(captured_outputs) != 1:
         raise AssertionError("expected exactly one block-0 QKV invocation")
 
-    weights = tuple(tuple(row) for row in qkv.weight[:16].detach().cpu().tolist())
-    biases = tuple(qkv.bias[:16].detach().cpu().tolist())
     full_errors = {
         scope: full_qkv_error_stats(
             captured_inputs[0], captured_outputs[0], qkv.weight.detach().cpu(),
@@ -136,32 +158,38 @@ def probe(
     for token_index in token_indices:
         float_activations = tuple(tuple(row) for row in captured_inputs[0][:, token_index, :].tolist())
         reference = tuple(tuple(row) for row in captured_outputs[0][:, token_index, :16].tolist())
-        modes = {}
-        for name, scale in (("token_scale", None), ("layer_scale", layer_activation_scale)):
-            quantized_activations, quantized_weights, quantized_biases, activation_scale, weight_scales = (
-                quantize_candidate_tile(float_activations, weights, biases, activation_scale=scale)
-            )
-            integer_outputs = tuple(quantized_tile(row, quantized_weights, quantized_biases)
-                                    for row in quantized_activations)
-            rtl_result = verify(quantized_activations, quantized_weights, quantized_biases)
-            reconstructed = dequantized_outputs(integer_outputs, activation_scale, weight_scales)
-            modes[name] = {
-                "rtl_result": rtl_result,
-                "activation_scale": activation_scale,
-                **error_stats(reference, reconstructed),
-            }
+        weights = tuple(tuple(row) for row in qkv.weight[:16].detach().cpu().tolist())
+        biases = tuple(qkv.bias[:16].detach().cpu().tolist())
         rows.append({
             "token_index": token_index,
+            "qkv_row_start": 0,
             "candidate_input_max_abs_delta": max(abs(a - b) for row in float_activations[1:]
                                                   for a, b in zip(float_activations[0], row)),
-            "quantization_modes": modes,
+            "quantization_modes": verify_sampled_tile(
+                float_activations, reference, weights, biases, layer_activation_scale,
+            ),
+        })
+    # Q, K, and V each occupy 400 consecutive rows. The Q samples above
+    # already test row 0; capture representative K and V tiles at token 0.
+    first_token_activations = tuple(tuple(row) for row in captured_inputs[0][:, 0, :].tolist())
+    for row_start in (MODEL.predictor_dim, 2 * MODEL.predictor_dim):
+        row_end = row_start + 16
+        reference = tuple(tuple(row) for row in captured_outputs[0][:, 0, row_start:row_end].tolist())
+        weights = tuple(tuple(row) for row in qkv.weight[row_start:row_end].detach().cpu().tolist())
+        biases = tuple(qkv.bias[row_start:row_end].detach().cpu().tolist())
+        rows.append({
+            "token_index": 0,
+            "qkv_row_start": row_start,
+            "quantization_modes": verify_sampled_tile(
+                first_token_activations, reference, weights, biases, layer_activation_scale,
+            ),
         })
     return {
         "model": "facebook/jepa-wms:jepa_wm_pusht predictor",
         "upstream_commit": MODEL.upstream_commit,
         "checkpoint_sha256": digest,
         "input_kind": "synthetic_encoded_latents_actions_and_proprioception; actual_block_0_qkv_activations",
-        "measurement_scope": "all tokens and 1200 QKV rows in software; sampled tokens and 16 rows in RTL; no full-model INT8 quality or FPGA latency",
+        "measurement_scope": "all tokens and 1200 QKV rows in software; sampled 16-row Q, K, V tiles in RTL; no full-model INT8 quality or FPGA latency",
         "device": device,
         "platform": platform.platform(),
         "torch_version": torch.__version__,

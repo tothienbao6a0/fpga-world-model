@@ -8,7 +8,7 @@ This repository studies **the inference workload of a trained visual world model
 - `worldmodel/spec.py` pins the upstream commit and checkpoint revision and rejects a mismatched architecture.
 - `rtl/qkv_tile.sv` is a synthesizable 16-lane INT8 matrix-vector tile for the real predictor's 1,200×400 QKV projection. The simulator checks a 16×400 slice quantized from the checkpoint against an integer software reference; the generic synthesis check runs in `make check`.
 - `worldmodel/candidate_bench.py` measures multiple action candidates sharing one visual context. `rtl/qkv_candidate_tile.sv` broadcasts each QKV weight to four candidates in parallel; simulation checks a quantized 16×400 checkpoint slice. This tests a weight-traffic idea, not full-model FPGA acceleration.
-- `worldmodel/activation_probe.py` captures block-0 QKV inputs from one predictor pass batched over four candidate actions, measures INT8 error across all 512 tokens and 1,200 QKV rows, and drives sampled activations through the 16-row RTL tile.
+- `worldmodel/activation_probe.py` captures block-0 QKV inputs from one predictor pass batched over four candidate actions, measures INT8 error across all 512 tokens and 1,200 QKV rows, and drives sampled Q, K, and V slices through the 16-row RTL tile.
 - `results/` contains the first one-thread macOS CPU measurements for two and four input frames. These are real **checkpoint-backed predictor** runs. The inputs are synthetic latents, so the numbers are not end-to-end video inference or prediction-quality results.
 
 ## Reproduce

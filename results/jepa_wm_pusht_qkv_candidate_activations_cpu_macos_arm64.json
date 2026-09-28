@@ -3,7 +3,7 @@
   "upstream_commit": "13cf1d9c7e476f53c17714d2e0f1dc239a883ce0",
   "checkpoint_sha256": "9beca3eafe0739c3b3adb5d734fa435ccbda0fea8a65d53d4cccec176aaaa0eb",
   "input_kind": "synthetic_encoded_latents_actions_and_proprioception; actual_block_0_qkv_activations",
-  "measurement_scope": "all tokens and 1200 QKV rows in software; sampled tokens and 16 rows in RTL; no full-model INT8 quality or FPGA latency",
+  "measurement_scope": "all tokens and 1200 QKV rows in software; sampled 16-row Q, K, V tiles in RTL; no full-model INT8 quality or FPGA latency",
   "device": "cpu",
   "platform": "macOS-26.5.2-arm64-arm-64bit",
   "torch_version": "2.7.0",
@@ -40,6 +40,7 @@
   "samples": [
     {
       "token_index": 0,
+      "qkv_row_start": 0,
       "candidate_input_max_abs_delta": 0.8703449070453644,
       "quantization_modes": {
         "token_scale": {
@@ -62,6 +63,7 @@
     },
     {
       "token_index": 255,
+      "qkv_row_start": 0,
       "candidate_input_max_abs_delta": 1.3033527731895447,
       "quantization_modes": {
         "token_scale": {
@@ -84,6 +86,7 @@
     },
     {
       "token_index": 256,
+      "qkv_row_start": 0,
       "candidate_input_max_abs_delta": 1.2559930682182312,
       "quantization_modes": {
         "token_scale": {
@@ -106,6 +109,7 @@
     },
     {
       "token_index": 511,
+      "qkv_row_start": 0,
       "candidate_input_max_abs_delta": 0.7243938744068146,
       "quantization_modes": {
         "token_scale": {
@@ -122,6 +126,50 @@
           "max_abs_error": 0.18368758735073154,
           "rmse": 0.07478689948755035,
           "relative_l2_error": 0.01971060432216529,
+          "values_compared": 64
+        }
+      }
+    },
+    {
+      "token_index": 0,
+      "qkv_row_start": 400,
+      "quantization_modes": {
+        "token_scale": {
+          "rtl_result": "PASS 4 candidates x 16 lanes x 400 inputs",
+          "activation_scale": 0.036756361563374675,
+          "max_abs_error": 0.1608642705118971,
+          "rmse": 0.06402909745143538,
+          "relative_l2_error": 0.013222822572350764,
+          "values_compared": 64
+        },
+        "layer_scale": {
+          "rtl_result": "PASS 4 candidates x 16 lanes x 400 inputs",
+          "activation_scale": 0.04737828097005529,
+          "max_abs_error": 0.2351861922571019,
+          "rmse": 0.08180304974070118,
+          "relative_l2_error": 0.0168933696655477,
+          "values_compared": 64
+        }
+      }
+    },
+    {
+      "token_index": 0,
+      "qkv_row_start": 800,
+      "quantization_modes": {
+        "token_scale": {
+          "rtl_result": "PASS 4 candidates x 16 lanes x 400 inputs",
+          "activation_scale": 0.036756361563374675,
+          "max_abs_error": 0.13639676709237047,
+          "rmse": 0.06059188304779321,
+          "relative_l2_error": 0.021724169077035425,
+          "values_compared": 64
+        },
+        "layer_scale": {
+          "rtl_result": "PASS 4 candidates x 16 lanes x 400 inputs",
+          "activation_scale": 0.04737828097005529,
+          "max_abs_error": 0.25446260239478935,
+          "rmse": 0.08771053214735659,
+          "relative_l2_error": 0.03144709050720487,
           "values_compared": 64
         }
       }
