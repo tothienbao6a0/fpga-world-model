@@ -19,7 +19,8 @@ class CliTest(unittest.TestCase):
             lines = [json.loads(line) for line in trace.read_text().splitlines()]
             self.assertEqual(result, 0)
             self.assertEqual(summary["results"]["3"]["decisions"], 4)
-            self.assertEqual(len(lines), 8)
+            self.assertEqual(len(lines), 12)
+            self.assertIn("3+refine2", summary["results"])
             self.assertTrue(all(line["score_regret"] >= 0 for line in lines))
 
     def test_invalid_horizon_rejected(self):

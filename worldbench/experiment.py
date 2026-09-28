@@ -7,7 +7,7 @@ from random import Random
 from time import perf_counter_ns
 
 from worldbench.dynamics import LinearWorldModel, State, step
-from worldbench.planner import candidate_sequences, choose_action
+from worldbench.planner import candidate_sequences, choose_action, choose_action_refined
 
 
 @dataclass(frozen=True)
@@ -15,6 +15,7 @@ class Trace:
     episode: int
     time_step: int
     bits: int | None
+    refine_top_k: int
     position: float
     velocity: float
     target: float
@@ -44,23 +45,29 @@ def run_episode(
     steps: int,
     horizon: int,
     bits: int | None,
+    refine_top_k: int = 0,
 ) -> tuple[list[Trace], float]:
     if steps < 1:
         raise ValueError("steps must be positive")
+    if refine_top_k < 0 or (refine_top_k and bits is None):
+        raise ValueError("refinement needs positive top-k and coarse bits")
     candidates = candidate_sequences(horizon)
     state = initial_state
     traces = []
     for time_step in range(steps):
         reference = choose_action(model, state, target, candidates)
         start = perf_counter_ns()
-        decision = choose_action(model, state, target, candidates, bits)
+        decision = (
+            choose_action_refined(model, state, target, candidates, bits, refine_top_k)
+            if refine_top_k else choose_action(model, state, target, candidates, bits)
+        )
         planning_ns = perf_counter_ns() - start
         # Compare first actions, since the controller replans next step. This is
         # model-relative diagnostic regret, not true environment regret.
         reference_score_of_action = reference.score_for_action(decision.action)
         traces.append(
             Trace(
-                episode, time_step, bits, state[0], state[1], target,
+                episode, time_step, bits, refine_top_k, state[0], state[1], target,
                 decision.action, reference.action, decision.action != reference.action,
                 reference_score_of_action, reference.score,
                 max(0.0, reference.score - reference_score_of_action),
@@ -89,6 +96,7 @@ def summarize(traces: list[Trace], final_costs: list[float]) -> dict:
         "action_flip_rate": sum(trace.action_flip for trace in traces) / len(traces),
         "mean_model_relative_regret": sum(trace.score_regret for trace in traces) / len(traces),
         "mean_final_cost": sum(final_costs) / len(final_costs),
+        "mean_transitions_per_decision": sum(trace.transitions for trace in traces) / len(traces),
         "p50_planning_ns": percentile(times, 50),
         "p95_planning_ns": percentile(times, 95),
     }
